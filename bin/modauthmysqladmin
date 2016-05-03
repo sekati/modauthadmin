@@ -1,0 +1,140 @@
+#!/bin/sh
+# Sekati: ModAuthMySQLAdmin
+# @author jason m horwitz | sekati.com
+# Copyright (C) 2011 jason m horwitz, Sekat LLC. All Rights Reserved.
+#
+# CHANGELOG
+
+NAME="ModAuthMySQLAdmin"
+VERSION="1.0.3"
+DEL="******************************************************"
+DBHOST="localhost"
+DBNAME="authdb"
+DBUSER="authdb_user"
+DBPASS="ModAuthMySQLAuthent1cat10n"
+DBTABLE="accounts"
+
+printHeader() {
+        echo "\n$DEL\n$NAME v$VERSION\n$DEL\n"
+}
+
+printUsage() {
+        echo "Usage: $0 {\n adduser | deluser | passwd | groups | groupadd | enable | disable | list | directives | usage | optimize | ? \n} username, passwd, email, groups\n"
+}
+
+# die [goodbye_message]
+die() {
+        echo $@
+        exit 1
+}
+
+# confirm [question]
+confirm() {
+        echo "$1 (y/n)"
+        read a
+        case "$a" in
+        n|N)
+        die "\n $NAME Exiting ..."
+        ;;
+        esac
+}
+
+# pass a sql query
+sqlquery() {
+        echo "$1" | mysql -h $DBHOST -u $DBUSER -p$DBPASS -D $DBNAME
+}
+
+printHeader
+
+case $1 in
+	directives|dir)
+		echo "Displaying DIRECTIVES for LibApache2ModAuthMySQL ...\n"
+		zcat /usr/share/doc/libapache2-mod-auth-mysql/DIRECTIVES.gz | less
+		;;
+
+	usage)
+		echo "Displaying USAGE for LibApache2ModAuthMySQL ...\n"
+		zcat /usr/share/doc/libapache2-mod-auth-mysql/USAGE.gz | less
+		;;
+
+	list)
+		if test -z "$2"; then
+		        echo "Displaying Accounts ...\n"
+		        sqlquery "SELECT * FROM \`$DBTABLE\`"
+		else
+		        echo "Displaying Account for Username '$2' ...\n"
+		        sqlquery "SELECT * FROM \`$DBTABLE\` WHERE username='$2'"
+		fi
+		;;
+
+	adduser)
+		confirm "username: \t$2\npasswd: \t$3\nemail: \t\t$4\ngroups: \t$5\n\nAre you sure you'd like to add this user?"
+		SQL="INSERT INTO \`$DBTABLE\` (username, email, passwd, groups) VALUES ('$2', '$4', '$3', '$5')";
+		echo "\nSQL Query: $SQL\n"
+		sqlquery "$SQL"
+		echo "User '$2' added."
+		;;
+
+	deluser)
+		confirm "Are you sure you want to delete user '$2'?"
+		SQL="DELETE FROM \`$DBTABLE\` WHERE username='$2'"
+		echo "\nSQL Query: $SQL\n"
+		sqlquery "$SQL"
+		echo "User '$2' removed."
+		;;
+
+	passwd)
+		confirm "Are you sure you want to change username '$2' password to: '$3'?"
+		SQL="UPDATE \`$DBTABLE\` SET passwd='$3' WHERE username='$2'"
+		echo "\nSQL Query: $SQL\n"
+		sqlquery "$SQL"
+		echo "User '$2' Password changed to '$3'."
+		;;
+
+	groups)
+        confirm "Are you sure you want to change username '$2' groups to: '$3'?"
+        SQL="UPDATE \`$DBTABLE\` SET groups='$3' WHERE username='$2'"
+        echo "\nSQL Query: $SQL\n"
+        sqlquery "$SQL"
+        echo "User '$2' Groups changed to '$3'."
+        ;;
+
+	groupadd|addgroup)
+        confirm "Are you sure you want to add username '$2' to group '$3'?"
+        SQL="UPDATE \`$DBTABLE\` SET groups=concat(groups,',$3') WHERE username='$2'"
+        echo "\nSQL Query: $SQL\n"
+        sqlquery "$SQL"
+        echo "User '$2' added to Group '$3'."
+        ;;
+
+	enable)
+        confirm "Are you sure you want to enable username '$2' account?"
+        SQL="UPDATE \`$DBTABLE\` SET enabled='1' WHERE username='$2'"
+        echo "\nSQL Query: $SQL\n"
+        sqlquery "$SQL"
+        echo "User '$2' account Enabled."
+        ;;
+
+	disable)
+        confirm "Are you sure you want to disable username '$2' account?"
+        SQL="UPDATE \`$DBTABLE\` SET enabled='0' WHERE username='$2'"
+        echo "\nSQL Query: $SQL\n"
+        sqlquery "$SQL"
+        echo "User '$2' account Disabled."
+        ;;
+
+	optimize)
+        confirm "Are you sure you want to optimize '$DBTABLE'?"
+        SQL="OPTIMIZE TABLE $DBTABLE"
+        echo "\nSQL Query: $SQL\n"
+        sqlquery "$SQL"
+        echo "$DBTABLE Optimized."
+        ;;
+
+	*|?)
+        printUsage
+        exit 1
+        ;;
+esac
+
+exit 0

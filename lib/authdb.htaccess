@@ -1,0 +1,37 @@
+# Directory Options
+Options All
+
+# Force SSL
+<IfModule mod_rewrite.c>
+  <IfModule mod_ssl.c>
+    RewriteEngine on
+    RewriteCond %{HTTPS} !=on
+    RewriteRule .* https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
+  </IfModule>
+</IfModule>
+
+# Authentification Settings
+AuthType Basic
+AuthBasicAuthoritative Off
+AuthUserFile /dev/null
+AuthName "Authorized Access Only"
+require valid-user
+#require group wheel badgroup
+
+# MySQL Auth Settings
+AuthMYSQL on
+AuthMySQL_Authoritative on
+AuthMySQL_Empty_Passwords off
+AuthMySQL_Encryption_Types SHA1Sum
+
+# MySQL Auth Server
+AuthMySQL_Host localhost                                                                                                                                      
+AuthMySQL_DB authdb
+AuthMySQL_User authdb_user   
+AuthMySQL_Password ModAuthMySQLAuthent1cat10n
+AuthMySQL_Password_Table accounts             
+AuthMySQL_Group_Table accounts
+Auth_MySQL_Username_Field username
+Auth_MySQL_Password_Field passwd
+Auth_MySQL_Group_Field groups
+Auth_MySQL_Where " AND enabled=1"
